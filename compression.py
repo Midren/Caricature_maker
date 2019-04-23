@@ -28,5 +28,3 @@ def compress_and_wb(image_path):
 def wb_converter(rgb):
     assert len(rgb) == 3, "not rgb tuple"
     return rgb[0] *299/1000 + rgb[1] * 587/1000 + rgb[2] * 114/1000
-
-compress_and_wb("showmephoto.php.jpg")
