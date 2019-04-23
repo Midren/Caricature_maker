@@ -38,3 +38,4 @@ def wb_converter(rgb):
 
 
 compress_and_wb("hurley-square.jpg")
+
