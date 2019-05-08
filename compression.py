@@ -1,110 +1,93 @@
-import argparse
-import matplotlib.pyplot as plt
-from scipy import linalg
-from skimage import img_as_float, io
-import numpy as np
 from PIL import Image
-import os
+from math import floor, ceil, sin, pi
+
+class Compressor:
+    default_size = (96, 96)
+    constant = 2   #different constant k will corespond to interpolation Lanczos_k
+
+    def __init__(self, path):
+        self.image = Image.open(path)
+        self.rate = self.image.size[0]/Compressor.default_size[0]
+        self.Lanczos_constant = round(self.constant*self.rate)
+
+    def lanczos_resampling(self, X_0, Y_0):
+        res = 0
+        for i in range(X_0 - self.Lanczos_constant + 1, X_0 + self.Lanczos_constant + 1):
+            for j in range(Y_0 - self.Lanczos_constant + 1, Y_0 + self.Lanczos_constant + 1):
+                try:
+                    current_pixel = self.white_n_black(self.image.getpixel((i, j)))
+                except:
+                    continue
+                res += self.__lanczos_kernel__(X_0 - i)*self.__lanczos_kernel__(Y_0 - j)*current_pixel
+        return res
+
+    def __lanczos_kernel__(self, x):
+        if x == 0:
+            return 1
+        if -self.Lanczos_constant <= x < self.Lanczos_constant:
+            return self.Lanczos_constant*sin(pi*x)*sin(pi*x/self.Lanczos_constant)/((pi*x)**2)
+        else:
+            return 0
+
+    def lanczos_execution(self):
+        new_image = Image.new("L", Compressor.default_size)
+        pixels = new_image.load()
+        for i in range(new_image.size[0]):
+            for j in range(new_image.size[1]):
+                pixels[i, j] = round(self.lanczos_resampling(round(self.rate*(i + 0.5)), round(self.rate*(j + 0.5))))
+        new_image.save("result.png")
 
 
-class Compress:
-    def __init__(self, fileName, k):
-        self.fileName = fileName
-        self.k = k
-        if fileName:
-            image = io.imread(fileName)  # reads image file into memory
-            print
-            "Image dimensions {0}".format(image.shape)
-            self.image_matrix = img_as_float(
-                image)  # converts image to matrix representation
-
-    def start(self):
-        if self.fileName:
-            if self.isRGB:
-                compressed = self.rgb_compression()
-            else:
-                compressed = self.monochrome_compression()
-            #
-            file_name, file_extension = os.path.splitext(self.fileName)
-            io.imsave("{0}_output{1}".format(file_name, file_extension),
-                      compressed)
-            io.imshow(compressed)
-            io.show()
-
-    def decompose(self, image_matrix):
-        # does the singular value decomposition
-        # image_matrix should be mxn
-        # S is the diagonal/middle matrix that has the singular values
-        # U and V are orthogonal matrices
-        U, S, V = linalg.svd(image_matrix)
-        return U, S, V
-
-    def rgb_compression(self):
-        """
-        """
-        compressed_red = self.monochrome_compression(
-            self.image_matrix[:, :, 0], self.k[0])
-        compressed_green = self.monochrome_compression(
-            self.image_matrix[:, :, 1], self.k[1])
-        compressed_blue = self.monochrome_compression(
-            self.image_matrix[:, :, 2], self.k[2])
-        # populates matrix with zeros
-        compressed_image = np.zeros(self.image_matrix.shape,
-                                    self.image_matrix.dtype)
-        for i in range(self.image_matrix.shape[0]):
-            for j in range(self.image_matrix.shape[1]):
-                for k in range(self.image_matrix.shape[2]):
-                    val = 0
-                    if k == 0:
-                        val = compressed_red[i][j]
-                    elif k == 1:
-                        val = compressed_green[i][j]
-                    else:
-                        val = compressed_blue[i][j]
-                    # values must be between -1.0 and 1.0
-                    if val < -1.0:
-                        val = -1.0
-                    elif val > 1.0:
-                        val = 1.0
-                    compressed_image[i][j][k] = val
-        return compressed_image
-
-    def monochrome_compression(self, image_matrix, k):
-        U, S, V = self.decompose(image_matrix)
-        rank = len(S)
-        if rank < k:
-            return image_matrix
-        # take columns less than k from U
-        truncated_u = U[:, :k]
-        # take rows less than k from V
-        truncated_v = V[:k, :]
-        # build the new S matrix with top k diagnal elements
-        truncated_s = np.zeros((k, k), image_matrix.dtype)
-        for i in range(k):
-            truncated_s[i][i] = S[i]
-        print
-        "truncated_u shape {0}, truncated_s shape {1}, truncated_v shape {2}".format(
-            truncated_u.shape, truncated_s.shape, truncated_v.shape)
-
-        # compressed/truncated matrix
-        return np.dot(np.dot(truncated_u, truncated_s), truncated_v)
-
-    def isRGB(self):
-        return len(self.image_matrix.shape) > 2
+    def whole_image_into_WB(self):
+        new = Image.new("L", self.image.size)
+        pixels = new.load()
+        for i in range(self.image.size[0]):
+            for j in range(self.image.size[1]):
+                pixels[i, j] = round(self.white_n_black(self.image.getpixel((i,j))))
+        new.save("WB_result.jpg")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SVD and Image compression')
-    parser.add_argument('-i', dest='fileName', nargs='?', help='image file')
-    parser.add_argument('-k', dest='k', nargs='*', default=['5', '5', '5'],
-                        help='compression factor k (default 5)')
-    args = parser.parse_args()
-    fileName = args.fileName
-    k = [5, 5, 5]
-    c = Compress("is", k)
-    c.start()
-# how to run code
-# python compression.py -i filename.jpeg -k 400 400 400
-# python compression.py -i filename.jpeg -k 300 300 300
-# python compression.py -i filename.jpeg -k 200 200 200
-# python compression.py -i filename.jpeg -k 100 100 100
+
+
+    def white_n_black(self, rgb):
+        return rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000
+
+
+
+
+
+
+def OLD_compress_as_mean(image_path):
+    default_size = 96
+    image_ex = Image.open(image_path)
+    new_image = Image.new("L", (default_size, default_size))
+    pixels = new_image.load()
+    region = (image_ex.size[0] / default_size, image_ex.size[1] / default_size)
+
+    for w in range(default_size):
+        for h in range(default_size):
+
+            c_region = (w * region[0], h * region[1])
+            n_region = ((w + 1) * region[0], (h + 1) * region[1])
+            num = 0
+
+            for i in range(floor(c_region[0]), ceil(n_region[0])):
+                for j in range(floor(c_region[1]), ceil(n_region[1])):
+
+                    try:
+                        ppx = image_ex.getpixel((i, j))
+                    except IndexError:
+                        continue
+
+                    num += WB_converter(rgb=ppx)  # from RGB to L
+
+            num = ceil(num / ((ceil(n_region[0]) - floor(c_region[0])) * (ceil(n_region[1]) - floor(c_region[1]))))
+            pixels[w, h] = num
+
+    new_image.save("old_result.jpg" )
+
+
+
+def WB_converter(rgb):
+    if len(rgb) == 3:
+        return rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000
