@@ -2,7 +2,6 @@ from PIL import Image
 from math import floor, ceil, sin, pi
 
 
-
 class Compressor:
     default_size = (96, 96)
     constant = 2   #different constant k will corespond to interpolation Lanczos_k
