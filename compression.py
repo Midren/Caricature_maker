@@ -46,9 +46,6 @@ class Compressor:
                 pixels[i, j] = round(self.white_n_black(self.image.getpixel((i,j))))
         new.save("WB_result.jpg")
 
-
-
-
     def white_n_black(self, rgb):
         return rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000
 
@@ -91,3 +88,5 @@ def OLD_compress_as_mean(image_path):
 def WB_converter(rgb):
     if len(rgb) == 3:
         return rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000
+
+Compressor("img/blet.png").lanczos_execution()
