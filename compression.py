@@ -44,6 +44,7 @@ class Compressor:
                 pixels[i, j] = round(
                     self.lanczos_resampling(round(self.rate * (i + 0.5)), round(self.rate * (j + 0.5))))
         new_image.save("res.png")
+        return new_image
 
     def whole_image_into_WB(self):
         new = Image.new("L", self.image.size)
@@ -230,4 +231,4 @@ def WB_converter(rgb):
     if len(rgb) == 3:
         return rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000
 
-Compressor("img/blet.png").lanczos_execution()
+# Compressor("img/blet.png").lanczos_execution()
