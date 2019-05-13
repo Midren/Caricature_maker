@@ -13,8 +13,8 @@ class Compressor:
     Sobel_dx_matrix = array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
     Sobel_dy_matrix = Sobel_dx_matrix.transpose()
 
-    def __init__(self, path):
-        self.image = Image.open(path)
+    def __init__(self, image):
+        self.image = image
         self.array_image = numpy.asarray(self.image)
 
         self.rate = self.image.size[0] / Compressor.default_size[0]
@@ -46,7 +46,7 @@ class Compressor:
             for j in range(self.default_size[1]):
                 pixels[i, j] = round(
                     self.lanczos_resampling(round(self.rate * (i + 0.5)), round(self.rate * (j + 0.5))))
-        new_image.save("res.png")
+        return new_image
 
     def whole_image_into_WB(self):
         new = Image.new("L", self.image.size)
@@ -54,7 +54,7 @@ class Compressor:
         for i in range(self.image.size[0]):
             for j in range(self.image.size[1]):
                 pixels[i, j] = round(self.white_n_black(self.image.getpixel((i, j))))
-        new.save("WB_result.jpg")
+        return new
 
     def white_n_black(self, rgb):
         try:
@@ -92,14 +92,7 @@ class Compressor:
 
         magnitude = numpy.sqrt(dx ** 2 + dy ** 2)
         angle = (numpy.arctan2(dy, dx)) * 180 / pi
-        a = self.matrix2image(magnitude)
-        b = self.matrix2image(angle)
-        c = self.matrix2image(dx)
-        d = self.matrix2image(dy)
-        a.save("a.png")
-        b.save("b.png")
-        c.save("c.png")
-        d.save("d.png")
+
         return (magnitude, angle)
 
     def matrix2image(self, mat):
@@ -148,6 +141,9 @@ class Compressor:
                 normalized_blocks[r, c, :] = out
         return HoG_arrays.ravel()
 
+    def HoG(self):
+        mag, angle = self.gradient_execution()
+        return self.HoG__calculation(mag, angle)
 
 
 """
